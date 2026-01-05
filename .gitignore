@@ -1,10 +1,44 @@
-node_modules
-.env
-coverage
-coverage.json
-typechain
-typechain-types
+# Dependencies
+node_modules/
 
-#Hardhat files
-cache*
-artifacts*
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Hardhat
+cache/
+artifacts/
+typechain/
+typechain-types/
+
+# zkSync
+cache-zk/
+artifacts-zk/
+
+# Coverage
+coverage/
+coverage.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Build outputs
+dist/
+build/
+
+# Misc
+*.swp
+*.swo
+.claude/

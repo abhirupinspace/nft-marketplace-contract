@@ -1,39 +1,17 @@
-require("@matterlabs/hardhat-zksync-solc");
-require("@matterlabs/hardhat-zksync-verify");
-
+require("@nomicfoundation/hardhat-ethers");
+require("@nomicfoundation/hardhat-chai-matchers");
+require("@openzeppelin/hardhat-upgrades");
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  zksolc: {
-    version: "1.4.1",
-    compilerSource: "binary",
-    settings: {
-      optimizer: {
-        enabled: true,
-      },
-    },
-  },
   networks: {
-    zkSyncSepoliaTestnet: {
-      url: "https://sepolia.era.zksync.dev",
-      ethNetwork: "sepolia",
-      zksync: true,
-      chainId: 300,
-      verifyURL:
-        "https://explorer.sepolia.era.zksync.dev/contract_verification",
-    },
-    zkSyncMainnet: {
-      url: "https://mainnet.era.zksync.io",
-      ethNetwork: "mainnet",
-      zksync: true,
-      chainId: 324,
-      verifyURL:
-        "https://zksync2-mainnet-explorer.zksync.io/contract_verification",
+    hardhat: {
+      chainId: 31337,
     },
   },
   paths: {
-    artifacts: "./artifacts-zk",
-    cache: "./cache-zk",
+    artifacts: "./artifacts",
+    cache: "./cache",
     sources: "./contracts",
     tests: "./test",
   },

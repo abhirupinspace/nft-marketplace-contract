@@ -12,6 +12,7 @@ async function main() {
     contractAddress,
     "contracts/Contract.sol:MyContract",
     constructorArgs
+  
   );
 }
 
