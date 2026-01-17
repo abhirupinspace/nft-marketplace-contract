@@ -18,9 +18,12 @@
     "hardhat": "^2.22.0"
   },
   "dependencies": {
+    "@openzeppelin/contracts": "^5.4.0",
     "@openzeppelin/contracts-upgradeable": "^4.9.6",
     "@thirdweb-dev/contracts": "^3.8.0",
     "erc721a-upgradeable": "^4.3.0",
+    "keccak256": "^1.0.6",
+    "merkletreejs": "^0.6.0",
     "zksync-ethers": "^5.7.0"
   }
 }
