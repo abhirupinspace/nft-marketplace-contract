@@ -38,6 +38,9 @@ Thumbs.db
 dist/
 build/
 
+# Deployments (contains addresses, keep local)
+deployments/
+
 # Misc
 *.swp
 *.swo
