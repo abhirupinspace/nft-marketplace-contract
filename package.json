@@ -1,21 +1,49 @@
 {
-  "name": "hardhat-javascript-starter",
+  "name": "nft-launchpad-contracts",
+  "version": "1.0.0",
+  "description": "NFT Launchpad Smart Contracts - ERC721A with Phase-Based Minting",
   "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "clean": "hardhat clean",
+
+    "deploy:local": "hardhat run scripts/deploy-testnet-simple.js --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy-testnet-simple.js --network sepolia",
+    "deploy:base-sepolia": "hardhat run scripts/deploy-testnet-simple.js --network baseSepolia",
+    "deploy:polygon-amoy": "hardhat run scripts/deploy-testnet-simple.js --network polygonAmoy",
+    "deploy:arbitrum-sepolia": "hardhat run scripts/deploy-testnet-simple.js --network arbitrumSepolia",
+    "deploy:optimism-sepolia": "hardhat run scripts/deploy-testnet-simple.js --network optimismSepolia",
+
+    "deploy:upgradeable:base-sepolia": "hardhat run scripts/deploy-testnet.js --network baseSepolia",
+
+    "verify:sepolia": "hardhat run scripts/verify-contracts.js --network sepolia",
+    "verify:base-sepolia": "hardhat run scripts/verify-contracts.js --network baseSepolia",
+    "verify:polygon-amoy": "hardhat run scripts/verify-contracts.js --network polygonAmoy",
+    "verify:arbitrum-sepolia": "hardhat run scripts/verify-contracts.js --network arbitrumSepolia",
+    "verify:optimism-sepolia": "hardhat run scripts/verify-contracts.js --network optimismSepolia",
+
+    "setup-phase:sepolia": "hardhat run scripts/setup-test-phase.js --network sepolia",
+    "setup-phase:base-sepolia": "hardhat run scripts/setup-test-phase.js --network baseSepolia",
+    "setup-phase:polygon-amoy": "hardhat run scripts/setup-test-phase.js --network polygonAmoy",
+
+    "node": "hardhat node",
+
     "build": "npx thirdweb@latest detect",
     "deploy": "npx thirdweb@latest deploy",
-    "publish": "npx thirdweb@latest publish",
-    "test": "hardhat test",
-    "compile": "hardhat compile"
+    "publish": "npx thirdweb@latest publish"
   },
   "devDependencies": {
     "@matterlabs/hardhat-zksync-solc": "^1.1.14",
     "@matterlabs/hardhat-zksync-verify": "^1.7.1",
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
     "@openzeppelin/hardhat-upgrades": "^3.9.1",
     "chai": "^6.2.2",
+    "dotenv": "^17.2.3",
     "ethers": "^6",
-    "hardhat": "^2.22.0"
+    "hardhat": "^2.22.0",
+    "hardhat-gas-reporter": "^2.0.0"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.4.0",
@@ -25,5 +53,14 @@
     "keccak256": "^1.0.6",
     "merkletreejs": "^0.6.0",
     "zksync-ethers": "^5.7.0"
-  }
+  },
+  "keywords": [
+    "nft",
+    "launchpad",
+    "erc721a",
+    "ethereum",
+    "solidity",
+    "smart-contracts"
+  ],
+  "license": "MIT"
 }
