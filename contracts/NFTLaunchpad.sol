@@ -48,11 +48,15 @@ contract NFTLaunchpad is Initializable, ERC721AUpgradeable {
     // External Managers
     PhaseManager public phaseManager;
     AllowlistManager public allowlistManager;
+    bool public managersLocked;
 
     // Revenue Management
     PayoutWallet[] public payoutWallets;
     uint256 public totalRevenue;
     uint256 public withdrawnRevenue;
+
+    // Pull Payment: pending withdrawals per wallet
+    mapping(address => uint256) public pendingWithdrawals;
 
     // Control Flags
     address private _owner;
@@ -84,7 +88,8 @@ contract NFTLaunchpad is Initializable, ERC721AUpgradeable {
     event PayoutWalletAdded(address wallet, uint256 sharePercentage);
     event PayoutWalletUpdated(uint256 index, address wallet, uint256 sharePercentage);
     event PayoutWalletRemoved(uint256 index);
-    event Withdrawn(uint256 amount);
+    event RevenueReleased(uint256 amount);
+    event PaymentClaimed(address indexed wallet, uint256 amount);
     event Paused();
     event Unpaused();
     event TransfersToggled(bool enabled);
@@ -92,6 +97,7 @@ contract NFTLaunchpad is Initializable, ERC721AUpgradeable {
     event RoyaltyInfoUpdated(address receiver, uint96 bps);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event ManagersUpdated(address phaseManager, address allowlistManager);
+    event ManagersLocked();
 
     // ============================================
     // ERRORS
@@ -113,6 +119,8 @@ contract NFTLaunchpad is Initializable, ERC721AUpgradeable {
     error TransferFailed();
     error ReentrancyGuard();
     error BatchTooLarge();
+    error ManagersAreLocked();
+    error NoPendingPayment();
 
     // ============================================
     // MODIFIERS
@@ -401,7 +409,13 @@ contract NFTLaunchpad is Initializable, ERC721AUpgradeable {
         emit PayoutWalletRemoved(index);
     }
 
-    function withdraw() external onlyOwner nonReentrant {
+    /**
+     * @notice Release funds to pending withdrawals (pull payment model)
+     * @dev This calculates shares and credits pending withdrawals.
+     *      Recipients must call claimPayment() to receive funds.
+     *      This prevents DoS from malicious payout wallets.
+     */
+    function releasePayments() external onlyOwner nonReentrant {
         uint256 balance = address(this).balance;
         if (balance == 0) revert NoFunds();
         if (payoutWallets.length == 0) revert InvalidShares();
@@ -412,21 +426,46 @@ contract NFTLaunchpad is Initializable, ERC721AUpgradeable {
         for (uint256 i = 0; i < payoutWallets.length;) {
             uint256 amount = (balance * payoutWallets[i].sharePercentage) / 10000;
             if (amount > 0) {
-                (bool success, ) = payoutWallets[i].wallet.call{value: amount}("");
-                if (!success) revert TransferFailed();
+                pendingWithdrawals[payoutWallets[i].wallet] += amount;
                 totalDistributed += amount;
             }
             unchecked { ++i; }
         }
 
+        // Dust goes to owner's pending withdrawal
         uint256 dust = balance - totalDistributed;
         if (dust > 0) {
-            (bool dustSuccess, ) = _owner.call{value: dust}("");
-            if (!dustSuccess) revert TransferFailed();
+            pendingWithdrawals[_owner] += dust;
         }
 
         withdrawnRevenue += balance;
-        emit Withdrawn(balance);
+        emit RevenueReleased(balance);
+    }
+
+    /**
+     * @notice Claim pending payment (pull payment model)
+     * @dev Anyone with pending payments can claim them.
+     *      This prevents DoS - each wallet handles their own withdrawal.
+     */
+    function claimPayment() external nonReentrant {
+        uint256 amount = pendingWithdrawals[msg.sender];
+        if (amount == 0) revert NoPendingPayment();
+
+        pendingWithdrawals[msg.sender] = 0;
+
+        (bool success, ) = msg.sender.call{value: amount}("");
+        if (!success) revert TransferFailed();
+
+        emit PaymentClaimed(msg.sender, amount);
+    }
+
+    /**
+     * @notice Get pending payment for a wallet
+     * @param wallet Address to check
+     * @return uint256 Pending amount
+     */
+    function getPendingPayment(address wallet) external view returns (uint256) {
+        return pendingWithdrawals[wallet];
     }
 
     function getTotalShares() public view returns (uint256) {
@@ -518,12 +557,30 @@ contract NFTLaunchpad is Initializable, ERC721AUpgradeable {
     // MANAGER FUNCTIONS
     // ============================================
 
+    /**
+     * @notice Update manager contract addresses
+     * @dev Can only be called when managers are not locked and contract is paused
+     * @param phaseManager_ New PhaseManager address
+     * @param allowlistManager_ New AllowlistManager address
+     */
     function setManagers(address phaseManager_, address allowlistManager_) external onlyOwner {
+        if (managersLocked) revert ManagersAreLocked();
+        if (!paused) revert InvalidInput(); // Must pause before changing managers
         if (phaseManager_ == address(0)) revert InvalidAddress();
         if (allowlistManager_ == address(0)) revert InvalidAddress();
         phaseManager = PhaseManager(phaseManager_);
         allowlistManager = AllowlistManager(allowlistManager_);
         emit ManagersUpdated(phaseManager_, allowlistManager_);
+    }
+
+    /**
+     * @notice Permanently lock manager contracts
+     * @dev This is irreversible - managers cannot be changed after locking
+     */
+    function lockManagers() external onlyOwner {
+        if (managersLocked) revert ManagersAreLocked();
+        managersLocked = true;
+        emit ManagersLocked();
     }
 
     // ============================================

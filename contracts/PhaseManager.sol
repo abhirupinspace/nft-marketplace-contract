@@ -313,9 +313,8 @@ contract PhaseManager is
         uint256 maxMint = _getMaxMintForWallet(wallet, phaseId);
         uint256 alreadyMinted = phaseMints[phaseId][wallet];
 
-        if (alreadyMinted + quantity > maxMint) revert ExceedsWalletLimit();
-
-        // Calculate final quantity with Buy X Get Y bonus
+        // Calculate final quantity with Buy X Get Y bonus FIRST
+        // so we can check limits against total tokens received
         finalQuantity = quantity;
         if (phase.buyXGetY && quantity >= phase.buyAmount) {
             uint256 bonus;
@@ -328,15 +327,19 @@ contract PhaseManager is
             }
         }
 
+        // FIX: Check wallet limit against finalQuantity (including bonuses)
+        // This prevents users from gaming the system with multiple transactions
+        if (alreadyMinted + finalQuantity > maxMint) revert ExceedsWalletLimit();
+
         if (phase.minted + finalQuantity > phase.maxSupply) revert ExceedsPhaseSupply();
 
-        // Calculate total price
+        // Calculate total price (only charge for purchased, not bonus)
         totalPrice = price * quantity;
 
-        // Record the mint
+        // FIX: Record finalQuantity (including bonuses) against wallet limit
         unchecked {
             phase.minted += finalQuantity;
-            phaseMints[phaseId][wallet] += quantity;
+            phaseMints[phaseId][wallet] += finalQuantity;
         }
 
         emit PhaseMintRecorded(phaseId, wallet, quantity, finalQuantity);

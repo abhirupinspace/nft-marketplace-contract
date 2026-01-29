@@ -62,6 +62,9 @@ contract AllowlistManager is
     /// @notice Flag indicating if group uses Merkle verification
     mapping(uint256 => bool) public walletGroupUseMerkle;
 
+    /// @notice Flag indicating if group's Merkle root is locked (immutable)
+    mapping(uint256 => bool) public merkleRootLocked;
+
     /// @notice Authorized launchpad contract address
     address public launchpadContract;
 
@@ -79,6 +82,7 @@ contract AllowlistManager is
     event WalletOverrideSet(uint256 indexed groupId, address indexed wallet, uint256 price, uint256 maxMint);
     event WalletGroupToggled(uint256 indexed groupId, bool active);
     event MerkleRootUpdated(uint256 indexed groupId, bytes32 merkleRoot);
+    event MerkleRootLocked(uint256 indexed groupId);
     event LaunchpadContractUpdated(address indexed previousLaunchpad, address indexed newLaunchpad);
     event PhaseManagerContractUpdated(address indexed previousPhaseManager, address indexed newPhaseManager);
 
@@ -91,6 +95,7 @@ contract AllowlistManager is
     error InvalidAddress();
     error InvalidGroupId();
     error GroupNotActive();
+    error MerkleRootIsLocked();
 
     // ============================================
     // MODIFIERS
@@ -259,6 +264,7 @@ contract AllowlistManager is
 
     /**
      * @notice Update Merkle root for a wallet group
+     * @dev Cannot update if merkle root is locked
      * @param groupId Group ID to update
      * @param merkleRoot New Merkle root
      */
@@ -266,10 +272,32 @@ contract AllowlistManager is
         uint256 groupId,
         bytes32 merkleRoot
     ) external onlyOwner validWalletGroup(groupId) {
+        if (merkleRootLocked[groupId]) revert MerkleRootIsLocked();
         if (merkleRoot == bytes32(0)) revert InvalidInput();
         walletGroupMerkleRoots[groupId] = merkleRoot;
         walletGroupUseMerkle[groupId] = true;
         emit MerkleRootUpdated(groupId, merkleRoot);
+    }
+
+    /**
+     * @notice Permanently lock a wallet group's Merkle root
+     * @dev This is irreversible - prevents rug pulls by ensuring allowlist cannot change mid-sale
+     * @param groupId Group ID to lock
+     */
+    function lockMerkleRoot(uint256 groupId) external onlyOwner validWalletGroup(groupId) {
+        if (!walletGroupUseMerkle[groupId]) revert InvalidInput();
+        if (merkleRootLocked[groupId]) revert MerkleRootIsLocked();
+        merkleRootLocked[groupId] = true;
+        emit MerkleRootLocked(groupId);
+    }
+
+    /**
+     * @notice Check if a wallet group's Merkle root is locked
+     * @param groupId Group ID to check
+     * @return bool True if locked
+     */
+    function isMerkleRootLocked(uint256 groupId) external view validWalletGroup(groupId) returns (bool) {
+        return merkleRootLocked[groupId];
     }
 
     // ============================================
